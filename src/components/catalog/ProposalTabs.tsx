@@ -1,12 +1,9 @@
 import { NavLink } from 'react-router-dom'
 
 const proposalItems = [
-  { label: 'Inicio', to: '/propuesta-1' },
-  { label: 'Programas', to: '/propuesta-2' },
-  { label: 'Trazabilidad', to: '/propuesta-3' },
-  { label: 'Consultas', to: '/propuesta-1' },
-  { label: 'Auditoria', to: '/propuesta-2' },
-  { label: 'Configuracion', to: '/propuesta-3' },
+  { label: 'Propuesta 1', to: '/propuesta-1' },
+  { label: 'Propuesta 2', to: '/propuesta-2' },
+  { label: 'Propuesta 3', to: '/propuesta-3' },
 ]
 
 // Esta barra permite alternar entre propuestas visuales del mismo catalogo.

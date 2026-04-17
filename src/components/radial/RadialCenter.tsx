@@ -8,13 +8,13 @@ interface RadialCenterProps {
 
 function getCenterPlanetImage(programName: string) {
   const normalizedName = programName.toLowerCase()
-  if (normalizedName.includes('ingles')) return '/img/Planta_Idiomas.png'
-  if (normalizedName.includes('fabrica')) return '/img/Planeta_Fabrica.png'
-  if (normalizedName.includes('nomina')) return '/img/Planeta_Nomina.png'
-  if (normalizedName.includes('practicas')) return '/img/Planeta_Practicas.png'
-  if (normalizedName.includes('proyeccion social')) return '/img/Planeta_ProyeccionSocial.png'
-  if (normalizedName.includes('presupuesto')) return '/img/Planeta_Presupuesto.png'
-  if (normalizedName.includes('vacantes')) return '/img/Planeta_Vacantes.png'
+  if (normalizedName.includes('ingles')) return '/img/Dashboard/planetas/Planta_Idiomas.png'
+  if (normalizedName.includes('fabrica')) return '/img/Dashboard/planetas/Planeta_Fabrica.png'
+  if (normalizedName.includes('nomina')) return '/img/Dashboard/planetas/Planeta_Nomina.png'
+  if (normalizedName.includes('practicas')) return '/img/Dashboard/planetas/Planeta_Practicas.png'
+  if (normalizedName.includes('proyeccion social')) return '/img/Dashboard/planetas/Planeta_ProyeccionSocial.png'
+  if (normalizedName.includes('presupuesto')) return '/img/Dashboard/planetas/Planeta_Presupuesto.png'
+  if (normalizedName.includes('vacantes')) return '/img/Dashboard/planetas/Planeta_Vacantes.png'
   return null
 }
 

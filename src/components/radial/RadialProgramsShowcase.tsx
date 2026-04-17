@@ -25,11 +25,14 @@ export function RadialProgramsShowcase({
   return (
     <section className="radial-showcase">
       <div className="radial-showcase-left">
-        <span className="section-tag">EXPLORACION RADIAL</span>
-        <h3 className="radial-showcase-title">Navega por programas</h3>
-        <p className="radial-showcase-copy">
-          Selecciona un nodo para enfocar el area y actualizar automaticamente el panel de metricas del lado derecho.
-        </p>
+        {/* Encabezado compacto para que el foco visual sea el radial, no el bloque de texto. */}
+        <header className="radial-showcase-heading">
+          <span className="section-tag">EXPLORACION RADIAL</span>
+          <h3 className="radial-showcase-title">Navega por programas</h3>
+          <p className="radial-showcase-copy">
+            Selecciona un nodo para enfocar el area y actualizar automaticamente el panel de metricas del lado derecho.
+          </p>
+        </header>
         <RadialMenu programs={programs} activeProgramId={activeProgram.id} onSelectProgram={onSelectProgram} />
       </div>
       <RadialDetailPanel activeProgram={activeProgram} />
