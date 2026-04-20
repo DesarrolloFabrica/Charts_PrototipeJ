@@ -3,6 +3,10 @@ import { useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { ProgramCard } from '../../types/catalog'
+import { mockPrograms } from '../../data/mockPrograms'
+import { OperationsGenderChart } from './OperationsGenderChart'
+import { ParliamentOperationsChart } from './ParliamentOperationsChart'
+import type { ParliamentAreaSlice } from './ParliamentOperationsChart'
 
 interface RadialDetailPanelProps {
   activeProgram: ProgramCard
@@ -21,12 +25,92 @@ function getProgramHeaderColor(programName: string) {
   return '#355e9a'
 }
 
-interface ChartSlide {
+/** Fondo del contenedor principal (header + KPIs + gráficas + CTA) por área. */
+function getProgramContainerBackground(programName: string) {
+  const n = programName.toLowerCase()
+  if (n.includes('programa 8') || n.includes('informe 8')) return '#EEF7F6'
+  if (n.includes('programa 9') || n.includes('informe 9')) return '#F5F7FA'
+  if (n.includes('fabrica')) return '#EAF6F4'
+  if (n.includes('presupuesto')) return '#EEF7F8'
+  if (n.includes('proyeccion social')) return '#F1EFFB'
+  if (n.includes('nomina')) return '#EDF8F8'
+  if (n.includes('practicas')) return '#F8F3EE'
+  if (n.includes('vacantes')) return '#F7F3FA'
+  if (n.includes('ingles')) return '#EAF5FB'
+  return '#f7f9fc'
+}
+
+interface ProgramBorderTokens {
+  normal: string
+  hover: string
+  active: string
+}
+
+const defaultBorderTokens: ProgramBorderTokens = {
+  normal: '#D9DEE5',
+  hover: '#949ca6',
+  active: '#2f3a58',
+}
+
+/** Bordes 1px por área: reposo, hover, interacción activa (p. ej. :active / foco). */
+function getProgramBorderTokens(programName: string): ProgramBorderTokens {
+  const n = programName.toLowerCase()
+  if (n.includes('programa 8') || n.includes('informe 8')) {
+    return { normal: '#CBE7E3', hover: '#5ec0b4', active: '#107ba7' }
+  }
+  if (n.includes('programa 9') || n.includes('informe 9')) {
+    return { normal: '#D9DEE5', hover: '#949ca6', active: '#2f3a58' }
+  }
+  if (n.includes('fabrica')) {
+    return { normal: '#BFE5DF', hover: '#88d5cd', active: '#4faaa1' }
+  }
+  if (n.includes('presupuesto')) {
+    return { normal: '#BFE3E8', hover: '#0895a5', active: '#043859' }
+  }
+  if (n.includes('proyeccion social')) {
+    return { normal: '#D9D8F5', hover: '#bbbcef', active: '#553ef1' }
+  }
+  if (n.includes('nomina')) {
+    return { normal: '#BFE6E8', hover: '#73d9d9', active: '#037f8b' }
+  }
+  if (n.includes('practicas')) {
+    return { normal: '#E8D8D8', hover: '#f2a35e', active: '#bb3559' }
+  }
+  if (n.includes('vacantes')) {
+    return { normal: '#DDD8F3', hover: '#6671d8', active: '#ed4c7e' }
+  }
+  if (n.includes('ingles')) {
+    return { normal: '#C9E3F3', hover: '#99d0f1', active: '#52b4f1' }
+  }
+  return defaultBorderTokens
+}
+
+interface ChartSlideBars {
   id: string
   title: string
+  variant: 'bars'
   /** Altura de barras mock 0–100 */
   bars: number[]
 }
+
+interface ChartSlideGenderOperations {
+  id: string
+  title: string
+  variant: 'gender-operations'
+  menPercent: number
+  womenPercent: number
+}
+
+interface ChartSlideParliament {
+  id: string
+  title: string
+  variant: 'parliament-operations'
+  coordinationPercent: number
+  coordinationColor: string
+  areas: ParliamentAreaSlice[]
+}
+
+type ChartSlide = ChartSlideBars | ChartSlideGenderOperations | ChartSlideParliament
 
 interface ProgramKpi {
   id: string
@@ -106,25 +190,98 @@ function getProgramPalette(programName: string): ProgramPalette {
   }
 }
 
+function accentColorForProgramName(name: string): string {
+  const p = mockPrograms.find((x) => x.name.toLowerCase() === name.toLowerCase())
+  return p?.accentColor ?? '#7381d3'
+}
+
+/** Porcentajes mock por área (planetas); suman 100 con coordinación. */
+function getParliamentSlideMock(program: ProgramCard): Omit<ChartSlideParliament, 'id' | 'title' | 'variant'> {
+  const coordinationPercent = 10 + (program.id % 10)
+  const rest = 100 - coordinationPercent
+  const labels = ['Ingles', 'Fabrica', 'Presupuestos', 'Nomina', 'Practicas', 'Vacantes', 'Proyeccion social'] as const
+  const weights = [22, 18, 17, 15, 14, 9, 5]
+  const sumW = weights.reduce((a, b) => a + b, 0)
+  const raw = weights.map((w) => (w / sumW) * rest)
+  const pcts = raw.map((v) => Math.floor(v))
+  let diff = rest - pcts.reduce((a, b) => a + b, 0)
+  const fracOrder = raw
+    .map((v, i) => ({ i, f: v - Math.floor(v) }))
+    .sort((a, b) => b.f - a.f)
+  for (let k = 0; k < diff; k++) {
+    pcts[fracOrder[k % fracOrder.length].i] += 1
+  }
+  const areas: ParliamentAreaSlice[] = labels.map((label, i) => ({
+    id: label.toLowerCase().replace(/\s+/g, '-'),
+    label,
+    percent: pcts[i] ?? 0,
+    color: accentColorForProgramName(label),
+  }))
+  return {
+    coordinationPercent,
+    coordinationColor: '#4a4578',
+    areas,
+  }
+}
+
 /** Slides mock por programa; solo UI, sin datos reales. */
 function getChartSlides(program: ProgramCard): ChartSlide[] {
   const seed = program.id % 3
   const baseBars = [42, 68, 55, 80, 48, 72, 60].map((v) => (v + seed * 7) % 92)
 
+  if (program.name.toLowerCase().includes('proyeccion social')) {
+    const gSeed = program.id % 7
+    /** Porcentaje hombres (mujeres = 100 - men siempre). */
+    const men = 32 + ((gSeed * 5) % 37)
+    const parliament = getParliamentSlideMock(program)
+    return [
+      {
+        id: 'dir-ops-genero',
+        title: 'Dirección de operaciones',
+        variant: 'gender-operations',
+        menPercent: men,
+        womenPercent: 100 - men,
+      },
+      {
+        id: 'dir-ops-parlamento',
+        title: 'Composicion direccion de operaciones',
+        variant: 'parliament-operations',
+        coordinationPercent: parliament.coordinationPercent,
+        coordinationColor: parliament.coordinationColor,
+        areas: parliament.areas,
+      },
+      {
+        id: 'trend-ps',
+        title: 'Tendencia operativa',
+        variant: 'bars',
+        bars: [...baseBars].reverse(),
+      },
+      {
+        id: 'mix-ps',
+        title: 'Composicion',
+        variant: 'bars',
+        bars: baseBars.map((v) => (v + 15) % 95),
+      },
+    ]
+  }
+
   return [
     {
       id: 'kpi',
       title: 'Indicadores clave',
+      variant: 'bars',
       bars: baseBars,
     },
     {
       id: 'trend',
       title: 'Tendencia operativa',
+      variant: 'bars',
       bars: [...baseBars].reverse(),
     },
     {
       id: 'mix',
       title: 'Composicion',
+      variant: 'bars',
       bars: baseBars.map((v) => (v + 15) % 95),
     },
   ]
@@ -172,13 +329,14 @@ function getHeaderObjectImage(programName: string) {
 interface ProgramActiveBodyProps {
   activeProgram: ProgramCard
   headerColor: string
+  borderTokens: ProgramBorderTokens
 }
 
 /**
  * Contenido del panel; se monta con `key` desde el padre para reiniciar el carrusel
  * al cambiar de programa sin efectos ni setState durante render.
  */
-function ProgramActiveBody({ activeProgram, headerColor }: ProgramActiveBodyProps) {
+function ProgramActiveBody({ activeProgram, headerColor, borderTokens }: ProgramActiveBodyProps) {
   const slides = useMemo(() => getChartSlides(activeProgram), [activeProgram])
   const kpis = useMemo(() => getProgramKpis(activeProgram), [activeProgram])
   const stateSegments = useMemo(() => getProgramStateSegments(activeProgram), [activeProgram])
@@ -199,7 +357,14 @@ function ProgramActiveBody({ activeProgram, headerColor }: ProgramActiveBodyProp
   return (
     <motion.div
       className="program-active-layout"
-      style={{ '--program-accent': palette.accent } as CSSProperties}
+      style={
+        {
+          '--program-accent': palette.accent,
+          '--panel-border': borderTokens.normal,
+          '--panel-border-hover': borderTokens.hover,
+          '--panel-border-active': borderTokens.active,
+        } as CSSProperties
+      }
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
@@ -283,16 +448,44 @@ function ProgramActiveBody({ activeProgram, headerColor }: ProgramActiveBodyProp
                 transition={{ duration: 0.25 }}
               >
                 <h5>{currentSlide.title}</h5>
-                <div className="mock-bar-chart" role="img" aria-label={`Grafica mock: ${currentSlide.title}`}>
-                  {currentSlide.bars.map((h, i) => (
-                    <span
-                      key={`${currentSlide.id}-bar-${i}`}
-                      className="mock-bar"
-                      style={{ height: `${h}%`, '--bar-color': palette.chart[i % palette.chart.length] } as CSSProperties}
+                {currentSlide.variant === 'gender-operations' ? (
+                  <>
+                    <OperationsGenderChart
+                      menPercent={currentSlide.menPercent}
+                      womenPercent={currentSlide.womenPercent}
+                      menFillColor={palette.chart[1]}
+                      womenFillColor={palette.chart[3]}
                     />
-                  ))}
-                </div>
-                <p className="carousel-caption">Mock visual — reemplazar por gráficas reales.</p>
+                    <p className="carousel-caption">
+                      Datos ilustrativos — personal de dirección de operaciones (hombres vs mujeres).
+                    </p>
+                  </>
+                ) : currentSlide.variant === 'parliament-operations' ? (
+                  <>
+                    <ParliamentOperationsChart
+                      coordinationPercent={currentSlide.coordinationPercent}
+                      coordinationColor={currentSlide.coordinationColor}
+                      areas={currentSlide.areas}
+                    />
+                    <p className="carousel-caption">
+                      Cada punto del hemiciclo es un asiento simbolico; el ovalo es Coordinacion. Porcentajes mock por
+                      area (suman 100%).
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="mock-bar-chart" role="img" aria-label={`Grafica mock: ${currentSlide.title}`}>
+                      {currentSlide.bars.map((h, i) => (
+                        <span
+                          key={`${currentSlide.id}-bar-${i}`}
+                          className="mock-bar"
+                          style={{ height: `${h}%`, '--bar-color': palette.chart[i % palette.chart.length] } as CSSProperties}
+                        />
+                      ))}
+                    </div>
+                    <p className="carousel-caption">Mock visual — reemplazar por gráficas reales.</p>
+                  </>
+                )}
               </motion.div>
             </AnimatePresence>
           </div>
@@ -313,11 +506,22 @@ function ProgramActiveBody({ activeProgram, headerColor }: ProgramActiveBodyProp
 
 export function RadialDetailPanel({ activeProgram }: RadialDetailPanelProps) {
   const headerColor = getProgramHeaderColor(activeProgram.name)
+  const containerBackground = getProgramContainerBackground(activeProgram.name)
+  const borderTokens = getProgramBorderTokens(activeProgram.name)
 
   return (
-    <section className="radial-detail-panel" aria-label="Detalle del programa seleccionado">
+    <section
+      className="radial-detail-panel"
+      aria-label="Detalle del programa seleccionado"
+      style={{ backgroundColor: containerBackground } as CSSProperties}
+    >
       <AnimatePresence mode="wait">
-        <ProgramActiveBody key={activeProgram.id} activeProgram={activeProgram} headerColor={headerColor} />
+        <ProgramActiveBody
+          key={activeProgram.id}
+          activeProgram={activeProgram}
+          headerColor={headerColor}
+          borderTokens={borderTokens}
+        />
       </AnimatePresence>
     </section>
   )
